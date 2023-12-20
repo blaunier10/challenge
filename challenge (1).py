@@ -1,10 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[6]:
-
-
-#importar bibliotecas
 import pandas as pd
 import streamlit as st
 from datetime import datetime
@@ -15,14 +8,11 @@ import io
 import tempfile
 @st.cache_data
 def to_excel(df):
-    output = BytesIO()
+    output = io.BytesIO()
     writer = pd.ExcelWriter(output, engine='openpyxl')
     df.to_excel(writer, index=False, sheet_name='Comissao_processada')
-    writer.close()  # Fechar o escritor para garantir que tudo seja salvo corretamente
-    output.seek(0)  # Voltar ao início do buffer
-
-    excel_data = output.read()
-
+    writer.save()
+    excel_data = output.getvalue()
     b64 = base64.b64encode(excel_data).decode('utf-8')
     href = f'<a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{b64}" download="comissao_processada.xlsx">Clique aqui para baixar o arquivo Excel</a>'
     return href
@@ -343,18 +333,16 @@ def process_commissions(relatorio):
     comissao['disbursment'] = comissao['disbursment'].dt.strftime('%d/%m/%Y')
     comissao.loc[dados['commission_type'] == 'spot', 'commission_type'] = 'challenge'
     
-    return comissao
+    return comissao_processada
 def main():
     st.image("logoverde.png", width=200)
-    st.title("Módulo de Comissões iCred")
+    st.title("Módulo Challenge iCred")
     data_formatada = datetime.now().strftime('%d/%m/%Y')
 
     uploaded_file_comissao = st.file_uploader("Selecione o arquivo de relatório de comissão", type=["xlsx", "xls"])
 
     if uploaded_file_comissao is not None:
         relatorio_comissao = pd.read_excel(uploaded_file_comissao)
-
-        # Processamento das colunas das comissões
         comissao = process_commissions(relatorio_comissao)
 
         # Criar um arquivo Excel temporário em memória usando BytesIO para 'comissao'
